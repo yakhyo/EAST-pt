@@ -1,48 +1,40 @@
-import os
 import time
-import shutil
-import argparse
-import subprocess
-
 import torch
-
-from nets.nn import EAST
+import subprocess
+import os
+from model import EAST
 from detect import detect_dataset
+import numpy as np
+import shutil
 
 
-def eval_model(opt):
-    print('Evaluating...')
-    if os.path.exists(opt.submit):
-        shutil.rmtree(opt.submit)
-    os.mkdir(opt.submit)
+def eval_model(model_name, test_img_path, submit_path, save_flag=True):
+    if os.path.exists(submit_path):
+        shutil.rmtree(submit_path)
+    os.mkdir(submit_path)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = EAST(False).to(device)
-    model.load_state_dict(torch.load(opt.saved_model))
+    model.load_state_dict(torch.load(model_name))
     model.eval()
 
     start_time = time.time()
-    detect_dataset(model, device, opt.test_images, opt.submit)
-    os.chdir(opt.submit)
+    detect_dataset(model, device, test_img_path, submit_path)
+    os.chdir(submit_path)
     res = subprocess.getoutput('zip -q submit.zip *.txt')
     res = subprocess.getoutput('mv submit.zip ../')
     os.chdir('../')
     res = subprocess.getoutput('python ./evaluate/script.py –g=./evaluate/gt.zip –s=./submit.zip')
     print(res)
     os.remove('./submit.zip')
-    print('Evaluation finished in {}'.format(time.time() - start_time))
+    print('eval time is {}'.format(time.time() - start_time))
 
-    if not opt.save_flag:
-        shutil.rmtree(opt.submit)
+    if not save_flag:
+        shutil.rmtree(submit_path)
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='EAST: An Efficient and Accurate Scene Text Detector')
-    parser.add_argument('--saved_model', type=str, default='./weights/east.pth', help='path to saved model')
-    parser.add_argument('--test_images', type=str, default='../data/ICDAR_2015/test_img', help='path to test images')
-    parser.add_argument('--submit', type=str, default='./submit', help='path to save results')
-    parser.add_argument('--save_flag', type=bool, default=True, help='path to save results')
-
-    opt = parser.parse_args()
-
-    eval_model(opt)
+    model_name = './pths/east_vgg16.pth'
+    test_img_path = os.path.abspath('../ICDAR_2015/test_img')
+    submit_path = './submit'
+    eval_model(model_name, test_img_path, submit_path)  
