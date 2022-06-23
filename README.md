@@ -54,10 +54,10 @@ Run:
 
 ## Training:
 
-Modify the parameters in `east/tools/train.py` and run:
+Modify the parameters in `east/tools/train.py` and run inside `tools` folder:
 
 ```
-python east/tools/train.py
+python train.py
 ```
 
 ## Evaluation and Inference:
@@ -67,9 +67,9 @@ python east/tools/train.py
 
 - **Detect:**
 
-    Modify the parameters in `east/tools/detect.py` and run:
+Modify the parameters in `east/tools/detect.py` and run:
   ```
-  python east/tools/detect.py
+  python detect.py
   ```
 
 <div align="center">
