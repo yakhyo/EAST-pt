@@ -7,28 +7,38 @@ from torch import nn
 from torch.utils import data
 from torch.optim import lr_scheduler
 
-from loss import Loss
-from model import EAST
-from dataset import Dataset
+from east.loss import Loss
+from east.models import EAST
+from east.utils import Dataset
 
 
 def train(args):
     file_num = len(os.listdir(args.train_images))
-    dataset = Dataset(args.train_images, args.train_labels)
 
+    print("Initializing Dataset...")
+    start = time.time()
+    dataset = Dataset(args.train_images, args.train_labels)
+    print(f"Initialized in {(time.time()-start)*1000}ms")
+
+    print("Creating Dataloader...")
+    start = time.time()
     train_loader = data.DataLoader(dataset,
                                    batch_size=args.batch_size,
                                    num_workers=args.num_workers,
                                    shuffle=True,
                                    drop_last=True)
+    print(f"Created in {(time.time() - start)*1000}ms")
     criterion = Loss()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    print("Creating Model...")
     model = EAST()
     data_parallel = False
     if torch.cuda.device_count() > 1:
         model = nn.DataParallel(model)
         data_parallel = True
     model.to(device)
+    print("Model created! Training getting started")
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
     scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=[args.epochs // 2], gamma=0.1)
 
@@ -41,7 +51,8 @@ def train(args):
             img, gt_score, gt_geo, ignored_map = img.to(device), gt_score.to(device), gt_geo.to(device), ignored_map.to(
                 device)
             pred_score, pred_geo = model(img)
-            loss = criterion(gt_score, pred_score, gt_geo, pred_geo, ignored_map)
+            loss_dict = criterion(gt_score, pred_score, gt_geo, pred_geo, ignored_map)
+            loss = loss_dict["geo_loss"] + loss_dict["classify_loss"]
 
             epoch_loss += loss.item()
             optimizer.zero_grad()
@@ -49,10 +60,12 @@ def train(args):
             optimizer.step()
 
             print('Epoch: [{}/{} ({}/{})]\t'
-                  'Time: {:>4.4f}\t'
-                  'Batch Loss: {:>4.4f}'.format(epoch, args.epochs, idx, file_num // args.batch_size,
-                                                time.time() - start_time,
-                                                loss.item()))
+                  'Time: {:>4.4f}ms\t'
+                  'Geo Loss: {:>4.4f}\t'
+                  'Class Loss: {:>4.4f}'.format(epoch, args.epochs, idx, file_num // args.batch_size,
+                                                (time.time() - start_time)*1000,
+                                                loss_dict["geo_loss"].item(),
+                                                loss_dict["classify_loss"]))
 
         scheduler.step()
         print('Epoch Loss is {:.8f}, epoch_time is {:.8f}'.format(epoch_loss / (file_num // args.batch_size),
@@ -67,8 +80,8 @@ def train(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="EAST: An Efficient and Accurate Scene Text Detector")
 
-    parser.add_argument("--train-images", default="data/ch4_training_images", help="Path to training images")
-    parser.add_argument("--train-labels", default="data/ch4_training_gt", help="Path to training labels")
+    parser.add_argument("--train-images", default="data/ch4_train_images", help="Path to training images")
+    parser.add_argument("--train-labels", default="data/ch4_train_gt", help="Path to training labels")
     parser.add_argument("--weights", default="./weights", help="Path to weights folder")
     parser.add_argument("--batch-size", default=20, type=int, help="Batch size")
     parser.add_argument("--learning-rate", default=1e-3, type=float, help="Learning rate")

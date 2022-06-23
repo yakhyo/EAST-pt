@@ -1,11 +1,13 @@
+import os
+import lanms
+import numpy as np
+from PIL import Image, ImageDraw
+
 import torch
 from torchvision import transforms
-from PIL import Image, ImageDraw
-from model import EAST
-import os
-from dataset import get_rotate_mat
-import numpy as np
-import lanms
+
+from east.models import EAST
+from east.utils import get_rotate_mat
 
 
 def resize(image):
@@ -24,7 +26,7 @@ def resize(image):
 
 
 def is_valid_poly(res, score_shape, scale):
-    """check if the poly in image scope
+    """ Check if the poly in image scope
     Input:
         res        : restored poly in original image
         score_shape: score map shape
@@ -41,7 +43,7 @@ def is_valid_poly(res, score_shape, scale):
 
 
 def restore_polys(valid_pos, valid_geo, score_shape, scale=4):
-    """restore polys from feature maps in given positions
+    """ Restore polys from feature maps in given positions
     Input:
         valid_pos  : potential text positions <numpy.ndarray, (n,2)>
         valid_geo  : geometry in valid_pos <numpy.ndarray, (5,n)>
@@ -67,8 +69,8 @@ def restore_polys(valid_pos, valid_geo, score_shape, scale=4):
 
         temp_x = np.array([[x_min, x_max, x_max, x_min]]) - x
         temp_y = np.array([[y_min, y_min, y_max, y_max]]) - y
-        coordidates = np.concatenate((temp_x, temp_y), axis=0)
-        res = np.dot(rotate_mat, coordidates)
+        coordinates = np.concatenate((temp_x, temp_y), axis=0)
+        res = np.dot(rotate_mat, coordinates)
         res[0, :] += x
         res[1, :] += y
 
@@ -165,8 +167,8 @@ def detect_dataset(model, device, test_img_path, submit_path):
 
 
 if __name__ == '__main__':
-    img_path = 'data/ch4_test_images/img_10.jpg'
-    model_path = 'weights/model_epoch_600.pth'
+    img_path = '../../data/ch4_test_images/img_10.jpg'
+    model_path = '../../weights/model_epoch_600.pth'
     res_img = 'res.png'
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = EAST().to(device)
