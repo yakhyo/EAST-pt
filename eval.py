@@ -6,7 +6,7 @@ import subprocess
 import torch
 
 from east.models import EAST
-from east.tools.detect import detect_dataset
+from detect import detect_dataset
 
 
 def eval_model(model_path, test_img_path, submit_path, save_flag=True):
@@ -24,7 +24,7 @@ def eval_model(model_path, test_img_path, submit_path, save_flag=True):
     os.chdir(submit_path)
     res = subprocess.getoutput('zip -q submit.zip *.txt')
     res = subprocess.getoutput('mv submit.zip ../')
-    os.chdir('../../../')
+    os.chdir('../')
     res = subprocess.getoutput('python ./evaluate/script.py –g=./evaluate/gt.zip –s=./submit.zip')
     print(res)
     os.remove('./submit.zip')
@@ -36,7 +36,7 @@ def eval_model(model_path, test_img_path, submit_path, save_flag=True):
 
 if __name__ == '__main__':
     weights = './weights/model_epoch_600.pth'
-    test_img_path = os.path.abspath('../../data/ch4_test_images')
+    test_img_path = os.path.abspath('data/ch4_test_images')
     submit_path = './submit'
     print("Evaluation started...")
     start = time.time()

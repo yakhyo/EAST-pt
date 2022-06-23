@@ -20,7 +20,7 @@ Run:
 ```
  git clone https://github.com/yakhyo/EAST-pt.git
  cd EAST-pt
- python train
+ python train.py
 ```
 
 ## Content:
@@ -31,7 +31,7 @@ Run:
 
 ## Data:
 
-- Download the training files from [here](https://rrc.cvc.uab.es/?ch=4&com=downloads) and place them as shown below:
+- Download the dataset [here](https://rrc.cvc.uab.es/?ch=4&com=downloads) and place them as shown below:
 - Task 4.1: Text Localization (2015 edition)
 ```
 .
